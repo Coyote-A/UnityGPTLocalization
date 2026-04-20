@@ -156,38 +156,43 @@ namespace RedGame.Framework.EditorTools
             {
                 EditorGUI.indentLevel++;
                 EditorGUILayout.BeginVertical("Box");
+
+                EditorGUI.BeginChangeCheck();
+
                 _baseUrl = EditorGUILayout.TextField("Base URL", _baseUrl);
                 if (string.IsNullOrEmpty(_baseUrl))
                     _baseUrl = DEFAULT_BASE_URL;
                 
                 _apiKey = EditorGUILayout.PasswordField("API Key", _apiKey);
-                if (!IsValidOpenAIKey(_apiKey))
+
+                // Editable model combo: free-form text field + presets dropdown button
+                EditorGUILayout.BeginHorizontal();
+                _model = EditorGUILayout.TextField("Model", _model);
+                if (GUILayout.Button("▾", EditorStyles.miniButton, GUILayout.Width(22)))
                 {
-                    GUIStyle style = new GUIStyle(EditorStyles.helpBox)
+                    GenericMenu menu = new GenericMenu();
+                    foreach (var preset in s_validModels)
                     {
-                        richText = true
-                    };
-                    EditorGUILayout.BeginHorizontal();
-                    EditorGUI.indentLevel--;
-                    GUILayout.Space(EditorGUIUtility.labelWidth);
-                    EditorGUILayout.LabelField("<color=#ff4444>Please enter a valid OpenAI API Key.</color>", style);
-                    EditorGUI.indentLevel++;
-                    EditorGUILayout.EndHorizontal();
+                        string captured = preset;
+                        menu.AddItem(new GUIContent(captured), _model == captured, () =>
+                        {
+                            _model = captured;
+                            SaveSettings();
+                            Repaint();
+                        });
+                    }
+                    menu.ShowAsContext();
                 }
-                int index = Array.IndexOf(s_validModels, _model);
-                index = EditorGUILayout.Popup("Model", index, s_validModels);
-                if (index >= 0 && index < s_validModels.Length)
-                {
-                    _model = s_validModels[index];
-                }
-            
+                EditorGUILayout.EndHorizontal();
+
                 _temperature = EditorGUILayout.Slider("Temperature", _temperature, 0, 1);
-                EditorGUILayout.EndVertical();
-                
+
                 if (EditorGUI.EndChangeCheck())
                 {
                     SaveSettings();
                 }
+
+                EditorGUILayout.EndVertical();
 
                 EditorGUI.indentLevel--;
             }
@@ -302,13 +307,6 @@ namespace RedGame.Framework.EditorTools
             EditorGUILayout.Space();
             _tableView ??= CreateTable();
             _tableView.DrawTableGUI(_recs, (_recs.Length + 2) * EditorGUIUtility.singleLineHeight);
-        }
-
-
-        private bool IsValidOpenAIKey(string key)
-        {
-            var apiKeyPattern = @"^sk-\w{32,}$";
-            return System.Text.RegularExpressions.Regex.IsMatch(key, apiKeyPattern);
         }
     }
 }
