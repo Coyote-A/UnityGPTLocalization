@@ -14,7 +14,8 @@ namespace RedGame.Framework.EditorTools
         
         private void RefreshStringTableCollection()
         {
-            _curCollection = null;
+            // Preserve currently selected collection if possible
+            var previous = _curCollection;
             CancelTask();
 
             string[] guids = AssetDatabase.FindAssets("t:StringTableCollection");
@@ -27,10 +28,39 @@ namespace RedGame.Framework.EditorTools
                 _collectionNames[i] = _collections[i].name;
             }
 
+            _curCollection = null;
+
             if (_collections.Length > 0)
             {
-                _curCollection = _collections[0];
-            } else
+                if (previous != null)
+                {
+                    // 1. Try to keep the exact same asset instance
+                    int index = Array.IndexOf(_collections, previous);
+                    if (index >= 0)
+                    {
+                        _curCollection = _collections[index];
+                    }
+                    else
+                    {
+                        // 2. Fallback: match by name (useful if GUIDs изменились после переименования/перемещения)
+                        for (int i = 0; i < _collections.Length; i++)
+                        {
+                            if (_collections[i] != null && _collections[i].name == previous.name)
+                            {
+                                _curCollection = _collections[i];
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // 3. If nothing найдено, просто берём первую коллекцию, как было раньше
+                if (_curCollection == null)
+                {
+                    _curCollection = _collections[0];
+                }
+            }
+            else
             {
                 _curCollection = null;
             }
