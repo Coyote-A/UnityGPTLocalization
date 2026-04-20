@@ -40,6 +40,14 @@ namespace RedGame.Framework.EditorTools
             OnOutputGUI();
         }
 
+        private void ReloadAll()
+        {
+            RefreshStringTableCollection();
+            RefreshRecords();
+            _tableView = null;
+            Repaint();
+        }
+
         private SimpleEditorTableView<TranslateRec> CreateTable()
         {
             SimpleEditorTableView<TranslateRec> tableView = new SimpleEditorTableView<TranslateRec>();
@@ -117,11 +125,17 @@ namespace RedGame.Framework.EditorTools
                 EditorGUILayout.HelpBox("No StringTableCollection found.\n"+
                                         "Please create at least one collection with Unity Localization", MessageType.Error);
                 EditorGUILayout.EndHorizontal();
-                
+
+                EditorGUILayout.BeginHorizontal();
                 if (GUILayout.Button("Create Collection"))
                 {
                     LocalizationTablesWindow.ShowWindow();
                 }
+                if (GUILayout.Button("Reload", GUILayout.Width(80)))
+                {
+                    ReloadAll();
+                }
+                EditorGUILayout.EndHorizontal();
                 
                 return;
             }
@@ -134,10 +148,24 @@ namespace RedGame.Framework.EditorTools
                 EditorGUILayout.BeginVertical("Box");
                 EditorGUILayout.BeginHorizontal();
                 int index = Array.IndexOf(_collections, _curCollection);
-                index = EditorGUILayout.Popup("Select Collection", index, _collectionNames);
-                if (index >= 0 && index < _collections.Length)
+                int newIndex = EditorGUILayout.Popup("Select Collection", index, _collectionNames);
+                if (newIndex >= 0 && newIndex < _collections.Length)
                 {
-                    _curCollection = _collections[index];
+                    if (newIndex != index)
+                    {
+                        _curCollection = _collections[newIndex];
+                        RefreshRecords();
+                        _tableView = null;
+                    }
+                    else
+                    {
+                        _curCollection = _collections[newIndex];
+                    }
+                }
+
+                if (GUILayout.Button("Reload", GUILayout.Width(80)))
+                {
+                    ReloadAll();
                 }
 
                 EditorGUILayout.EndHorizontal();
@@ -263,7 +291,14 @@ namespace RedGame.Framework.EditorTools
 
         private void OnEntryListGUI()
         {
+            EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Entries to be localized", EditorStyles.boldLabel);
+            if (GUILayout.Button("Reload", GUILayout.Width(80)))
+            {
+                ReloadAll();
+            }
+            EditorGUILayout.EndHorizontal();
+
             if (GUILayout.Button("Open Table Editor"))
             {
                 LocalizationTablesWindow.ShowWindow(_curCollection);
